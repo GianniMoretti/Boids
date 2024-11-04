@@ -49,7 +49,7 @@ brew install sfml
    cmake ..
    make  
    ```
-4. **Running the Application**
+4. **Running application**
    ```bash
    ./boids
    ```
