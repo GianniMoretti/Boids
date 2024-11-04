@@ -30,3 +30,26 @@ sudo apt-get install libsfml-dev
 brew update
 brew install sfml
 ```
+### Configuration and Compilation
+
+1. **Clone the repository** and navigate to the project directory:
+
+   ```bash
+   git clone 
+   cd Boids
+   ```
+2. **Create a build directory:**
+   ```bash
+   cd sequential(or parallel)
+   mkdir build
+   cd build
+   ```
+3. **Generate configuration files with CMake & build**
+   ```bash
+   cmake ..
+   make  
+   ```
+4. **Running the Application**
+   ```bash
+   ./boids
+   ```
