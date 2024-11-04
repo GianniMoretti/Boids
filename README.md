@@ -8,3 +8,25 @@ The software is based on interactions between artificial life forms, called boid
 - Cohesion: A boid steers to move toward the average position (center of mass) of nearby boids.
 
 This particular implementation follows the rules outlined in the following link: https://vanhunteradams.com/Pico/Animal_Movement/Boids-algorithm.html
+
+## Prerequisites
+
+Make sure you have the following installed:
+
+- **CMake** (version 3.10 or higher)
+- **SFML** (version 2.5 or higher)
+
+### Installing SFML
+
+#### On Ubuntu
+
+```bash
+sudo apt-get update
+sudo apt-get install libsfml-dev
+```
+
+#### On macOS (using Homebrew)
+```zsh
+brew update
+brew install sfml
+```
