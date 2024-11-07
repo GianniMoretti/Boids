@@ -6,8 +6,10 @@
 struct BoidData {
     sf::Vector2f position;
     sf::Vector2f velocity;
+    float biasval = 0.0f;
+    int scoutGroup = 0;
 
-    BoidData(float x, float y, float vx, float vy) : position(x, y), velocity(vx, vy) {}
+    BoidData(float x, float y, float vx, float vy, float biasval, int scoutGroup = 0) : position(x, y), velocity(vx, vy), biasval(biasval), scoutGroup(scoutGroup) {}
 };
 
 #endif // BOID_DATA_H
