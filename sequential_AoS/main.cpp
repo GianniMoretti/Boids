@@ -10,8 +10,9 @@
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 50;
-int windows_frame_rate = 10;
+int boids_number = 300;
+int windows_frame_rate = 60;
+bool isGraphicsOn = true;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters
@@ -20,37 +21,37 @@ float protectedRange = 10;
 float avoidfactor = 0.15f;
 float matchingfactor = 0.1f;
 float centeringfactor = 0.003f;
-int Margin = 300;                 // For now all the margin are equal
-float turnfactorx = 0.25f;
+int Margin = 300;                       // Same margin for all side
+float turnfactorx = 0.15f;
 float turnfactory = 0.15f;
 float maxspeed = 6;
 float minspeed = 3;
-//Biasval (comment for constant bias version)
-float maxbias = 0.0005f;
+//Biasval
+float maxbias = 0.001f;
 float biasincrement = 0.00004f;
-//uncomment for constant bias version
-// float maxbias = 0.001f;
-// float biasincrement = 0.001f;
-
-//Crea la versione che vede del cibo e lo segue
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(windows_width, windows_height), "Boids Simulation");
-    window.setFramerateLimit(windows_frame_rate);
-
-    // Vettore di dati dei boids
-    std::vector<BoidData> boidDataList;  //Potrebbe avere senso farlo diventare dei vettori per ogni variabile
-    BoidRenderer renderer(boids_scale);
+    //Data Boid Vector
+    std::vector<BoidData> boidDataList;  //SoA vs AoS?
+    boidDataList.reserve(boids_number);
+    //Data tmp Boid vector
+    std::vector<BoidData> boidDataList_tmp;
+    boidDataList_tmp.reserve(boids_number);
 
     // Boids creation
     for (int i = 0; i < boids_number; ++i) {
-        float x = static_cast<float>(rand() % (windows_width - Margin));
-        float y = static_cast<float>(rand() % (windows_height - Margin));
+        float x = static_cast<float>((rand() % (windows_width - Margin)) + Margin / 2);
+        float y = static_cast<float>((rand() % (windows_height - Margin)) + Margin / 2);
         float vx = static_cast<float>(rand() % 3 - 1);
         float vy = static_cast<float>(rand() % 3 - 1);
         int scG = rand() % 3;
         boidDataList.emplace_back(x, y, vx, vy, biasincrement, scG);
     }
+
+    BoidRenderer renderer(boids_scale);
+
+    sf::RenderWindow window(sf::VideoMode(windows_width, windows_height), "Boids Simulation");
+    window.setFramerateLimit(windows_frame_rate);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -61,7 +62,7 @@ int main() {
 
         //Boids Logic
         //Loop over all the boids
-        for (int i = 0; i < boidDataList.size(); i++) {       
+        for (int i = 0; i < boidDataList.size(); i++) {
             //Reference Boid
             BoidData refBoid = boidDataList[i];
             //Vector of the boid's state
@@ -163,14 +164,19 @@ int main() {
             else if (refBoid.position.y > windows_height) 
                 refBoid.position.y = windows_height;
 
-            boidDataList[i] = refBoid;
+            boidDataList_tmp.emplace_back(refBoid);
         }
-
-        window.clear();
-        for (const auto &boid : boidDataList) {
-            renderer.draw(window, boid); // Disegna ogni boid con il renderer
+        //New position, I use std::move() to avoid copying values
+        boidDataList = std::move(boidDataList_tmp);
+        
+        if (isGraphicsOn){
+            //Rendering
+            window.clear();
+            for (const auto &boid : boidDataList) {
+                renderer.draw(window, boid); 
+            }
+            window.display();
         }
-        window.display();
     }
     return 0;
 }
