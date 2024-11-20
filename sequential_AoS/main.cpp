@@ -3,16 +3,30 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 #include "include/boid.h"
 #include "include/boidRenderer.h"
 
+using namespace std::chrono;
+
+//Time profiling setting
+int prof_cycle = 5000;
+int count_cycle = 0;
+float sum_time = 0.0f;
+
+//BOIDS      Time
+//100        1.49452 ms
+//300        12.7126 ms
+//500        32.0284 ms
+//700        60.1844 ms
+
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 300;
+int boids_number = 700;
 int windows_frame_rate = 60;
-bool isGraphicsOn = true;
+bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters
@@ -60,6 +74,7 @@ int main() {
                 window.close();
         }
 
+        auto start_time = high_resolution_clock::now();
         //Boids Logic
         //Loop over all the boids
         for (int i = 0; i < boidDataList.size(); i++) {
@@ -168,15 +183,25 @@ int main() {
         }
         //New position, I use std::move() to avoid copying values
         boidDataList = std::move(boidDataList_tmp);
-        
+
+        auto end_time = high_resolution_clock::now();
+        sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
+        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << std::endl;
+
+        if (count_cycle > prof_cycle){
+            window.close();
+        }
+
         if (isGraphicsOn){
             //Rendering
             window.clear();
             for (const auto &boid : boidDataList) {
-                renderer.draw(window, boid); 
+                renderer.draw(window, boid);
             }
             window.display();
         }
+        count_cycle++;
     }
+    std::cout << "Mean time: " << (sum_time / prof_cycle) << " ms" << std::endl;
     return 0;
 }

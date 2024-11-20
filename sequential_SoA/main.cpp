@@ -3,16 +3,30 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 #include "include/boid.h"
 #include "include/boidRenderer.h"
 
+using namespace std::chrono;
+
+//Time profiling setting
+int prof_cycle = 10000;
+int count_cycle = 0;
+float sum_time = 0.0f;
+
+//BOIDS      Time
+//100        1.5626 ms
+//300        12.4906 ms
+//500        31.3894 ms
+//700        58.7639 ms
+
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 300;
+int boids_number = 700;
 int windows_frame_rate = 60;
-bool isGraphicsOn = true;
+bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters
@@ -60,6 +74,7 @@ int main() {
                 window.close();
         }
 
+        auto start_time = high_resolution_clock::now();
         //Boids Logic
         //Loop over all the boids
         for (int i = 0; i < boidDataList.size(); i++) {
@@ -114,13 +129,13 @@ int main() {
 
             //Windows margin controll
             if(tmp_pos_x < Margin)
-                tmp_pos_x += turnfactorx;
+                tmp_vel_x += turnfactorx;
             if(tmp_pos_x > windows_width - Margin)
-                tmp_pos_x -= turnfactorx;
+                tmp_vel_x -= turnfactorx;
             if(tmp_pos_y < Margin)
-                tmp_pos_y += turnfactory;
+                tmp_vel_y += turnfactory;
             if(tmp_pos_y > windows_height - Margin)
-                tmp_pos_y -= turnfactory;
+                tmp_vel_y -= turnfactory;
 
             //update the biasval
             if(boidDataList.scoutGroup[i] == 1){  //he wants to go to the right side
@@ -174,6 +189,14 @@ int main() {
         boidDataList = std::move(boidDataList_tmp);
         boidDataList_tmp.clear();
 
+        auto end_time = high_resolution_clock::now();
+        sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
+        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << std::endl;
+
+        if (count_cycle > prof_cycle){
+            window.close();
+        }
+
         if (isGraphicsOn){
             //Rendering
             window.clear();
@@ -182,6 +205,8 @@ int main() {
             }
             window.display();
         }
+        count_cycle++;
     }
+    std::cout << "Mean time: " << (sum_time / prof_cycle) << std::endl;
     return 0;
 }
