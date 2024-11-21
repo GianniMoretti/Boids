@@ -21,6 +21,9 @@ float sum_time = 0.0f;
 //500        32.0284 ms
 //700        60.1844 ms
 
+
+//700        20.4916 ms
+
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
@@ -46,7 +49,7 @@ float biasincrement = 0.00004f;
 
 int main() {
     //Data Boid Vector
-    std::vector<BoidData> boidDataList;  //SoA vs AoS?
+    std::vector<BoidData> boidDataList;
     boidDataList.reserve(boids_number);
     //Data tmp Boid vector
     std::vector<BoidData> boidDataList_tmp;
@@ -179,7 +182,7 @@ int main() {
             else if (refBoid.position.y > windows_height) 
                 refBoid.position.y = windows_height;
 
-            boidDataList_tmp.emplace_back(refBoid);
+            boidDataList_tmp.emplace_back(refBoid);        //In parallel possible race condition
         }
         //New position, I use std::move() to avoid copying values
         boidDataList = std::move(boidDataList_tmp);

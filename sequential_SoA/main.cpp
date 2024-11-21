@@ -11,7 +11,7 @@
 using namespace std::chrono;
 
 //Time profiling setting
-int prof_cycle = 10000;
+int prof_cycle = 1000;
 int count_cycle = 0;
 float sum_time = 0.0f;
 
@@ -21,11 +21,13 @@ float sum_time = 0.0f;
 //500        31.3894 ms
 //700        58.7639 ms
 
+//700        20.0279 ms
+
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
 int boids_number = 700;
-int windows_frame_rate = 60;
+int windows_frame_rate = 120;
 bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
@@ -46,7 +48,7 @@ float biasincrement = 0.00004f;
 
 int main() {
     //Data Boid Vector
-    BoidDataList boidDataList;  //SoA vs AoS?
+    BoidDataList boidDataList;
     boidDataList.reserve(boids_number);
     //Data tmp Boid vector
     BoidDataList boidDataList_tmp;
@@ -59,7 +61,7 @@ int main() {
         float vx = static_cast<float>(rand() % 3 - 1);
         float vy = static_cast<float>(rand() % 3 - 1);
         int scG = rand() % 3;
-        boidDataList.addBoid(x, y, vx, vy, biasincrement, scG);
+        boidDataList.addBoid(i, x, y, vx, vy, biasincrement, scG);
     }
 
     BoidRenderer renderer(boids_scale);
@@ -83,7 +85,6 @@ int main() {
             float tmp_vel_x = boidDataList.xVelocity[i];
             float tmp_vel_y = boidDataList.yVelocity[i];
             float tmp_biasval = boidDataList.biasvals[i];
-
             //Vector of the boid's state
             //The variable are:
             //0:xpos_avg, 1:ypos_avg, 2:xvel_avg, 3:yvel_avg, 4:neighboring_boids, 5:close_dx, 6:close_dy
@@ -182,12 +183,11 @@ int main() {
             else if (tmp_pos_y > windows_height) 
                 tmp_pos_y = windows_height;
             
-            boidDataList_tmp.addBoid(tmp_pos_x, tmp_pos_y, tmp_vel_x, tmp_vel_y, tmp_biasval, boidDataList.scoutGroup[i]);
+            boidDataList_tmp.addBoid(i, tmp_pos_x, tmp_pos_y, tmp_vel_x, tmp_vel_y, tmp_biasval, boidDataList.scoutGroup[i]);
         }
-
         //New position, I use std::move() to avoid copying values
         boidDataList = std::move(boidDataList_tmp);
-        boidDataList_tmp.clear();
+        boidDataList_tmp.reset(boids_number);
 
         auto end_time = high_resolution_clock::now();
         sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;

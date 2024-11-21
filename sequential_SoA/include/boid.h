@@ -1,6 +1,8 @@
 #ifndef BOID_DATA_H
 #define BOID_DATA_H
 
+#include <iostream>
+
 struct BoidDataList {
     std::vector<float> xPos;
     std::vector<float> yPos;
@@ -10,13 +12,13 @@ struct BoidDataList {
     std::vector<int> scoutGroup;
     int numBoid = 0;
 
-    void addBoid(float x, float y, float xv, float yv, float biasval, int scoutgroup) {
-        xPos.push_back(x);
-        yPos.push_back(y);
-        xVelocity.push_back(xv);
-        yVelocity.push_back(yv);
-        biasvals.push_back(biasval);
-        scoutGroup.push_back(scoutgroup);
+    void addBoid(int index, float x, float y, float xv, float yv, float biasval, int scoutgroup) {
+        xPos[index] = x;
+        yPos[index] = y;
+        xVelocity[index] = xv;
+        yVelocity[index] = yv;
+        biasvals[index] = biasval;
+        scoutGroup[index] = scoutgroup;
         numBoid++;
     }
 
@@ -26,7 +28,7 @@ struct BoidDataList {
         xVelocity.reserve(num);
         yVelocity.reserve(num);
         biasvals.reserve(num);
-        numBoid++;
+        scoutGroup.reserve(num);
     }
 
     int size(){
@@ -52,6 +54,11 @@ struct BoidDataList {
 
         // Reset the boid count
         numBoid = 0;
+    }
+
+    void reset(int size){
+        clear();
+        reserve(size);
     }
 };
 
