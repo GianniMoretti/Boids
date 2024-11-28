@@ -11,23 +11,18 @@
 using namespace std::chrono;
 
 //Time profiling setting
-int prof_cycle = 5000;
+int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
 
 //BOIDS      Time
-//100        1.49452 ms
-//300        12.7126 ms
-//500        32.0284 ms
-//700        60.1844 ms
+//10000      521
 
-
-//700        20.4916 ms
 
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 700;
+int boids_number = 30000;                        //Con define potrebbe andare meglio
 int windows_frame_rate = 60;
 bool isGraphicsOn = false;
 
@@ -189,7 +184,7 @@ int main() {
 
         auto end_time = high_resolution_clock::now();
         sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
-        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << std::endl;
+        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << "iter: " << count_cycle <<std::endl;
 
         if (count_cycle > prof_cycle){
             window.close();
@@ -205,6 +200,6 @@ int main() {
         }
         count_cycle++;
     }
-    std::cout << "Mean time: " << (sum_time / prof_cycle) << " ms" << std::endl;
+    std::cout << "Mean time: " << (sum_time / (prof_cycle -1)) << " ms" << std::endl;
     return 0;
 }

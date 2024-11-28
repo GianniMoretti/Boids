@@ -11,23 +11,19 @@
 using namespace std::chrono;
 
 //Time profiling setting
-int prof_cycle = 1000;
+int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
 
-//BOIDS      Time
-//100        1.5626 ms
-//300        12.4906 ms
-//500        31.3894 ms
-//700        58.7639 ms
+//BOIDS      Time     
+//10000      179
 
-//700        20.0279 ms
 
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 700;
-int windows_frame_rate = 120;
+int boids_number = 30000;                               //Con define forse va meglio
+int windows_frame_rate = 60;
 bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
@@ -47,6 +43,7 @@ float maxbias = 0.001f;
 float biasincrement = 0.00004f;
 
 int main() {
+    //Se ha senso devi cambiare tutto da vector a malloc e usa i puntatori
     //Data Boid Vector
     BoidDataList boidDataList;
     boidDataList.reserve(boids_number);
@@ -92,6 +89,7 @@ int main() {
             //Loop on all otherbirds less the reference boids
             for (int j = 0; j < boidDataList.size(); j++) {
                 if (i == j) {
+                    //Da cambiare non devi usare delle istruzioni speciali per uscire dal ciclo
                     continue;  // Skip if we're considering the same boid
                 }
                 //Calculate euclidean distance
@@ -112,7 +110,6 @@ int main() {
             }
 
             if(boidState[4] > 0){   // if there are neighboar boids
-
                 // Mean of the comulated neighbor boids
                 boidState[0] /= boidState[4];
                 boidState[1] /= boidState[4];
@@ -175,23 +172,24 @@ int main() {
             // Border limit controll
             if(tmp_pos_x < 0)
                 tmp_pos_x = 0;
-            else if(tmp_pos_x > windows_width) 
+            else if(tmp_pos_x > windows_width)
                 tmp_pos_x = windows_width;
             
             if (tmp_pos_y < 0)
                 tmp_pos_y = 0;
-            else if (tmp_pos_y > windows_height) 
+            else if (tmp_pos_y > windows_height)
                 tmp_pos_y = windows_height;
             
             boidDataList_tmp.addBoid(i, tmp_pos_x, tmp_pos_y, tmp_vel_x, tmp_vel_y, tmp_biasval, boidDataList.scoutGroup[i]);
         }
         //New position, I use std::move() to avoid copying values
+        //Da cambiare, usa i puntatori invece che gli oggetti
         boidDataList = std::move(boidDataList_tmp);
         boidDataList_tmp.reset(boids_number);
 
         auto end_time = high_resolution_clock::now();
         sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
-        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << std::endl;
+        std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << "iter: " << count_cycle <<std::endl;
 
         if (count_cycle > prof_cycle){
             window.close();
@@ -207,6 +205,6 @@ int main() {
         }
         count_cycle++;
     }
-    std::cout << "Mean time: " << (sum_time / prof_cycle) << std::endl;
+    std::cout << "Mean time: " << (sum_time / (prof_cycle -1)) << " ms" << std::endl;
     return 0;
 }
