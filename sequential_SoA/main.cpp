@@ -16,7 +16,7 @@ int count_cycle = 0;
 float sum_time = 0.0f;
 
 //BOIDS      Time     
-//10000      179
+//30000      2187.31
 
 
 int windows_width = 1200;
@@ -191,7 +191,7 @@ int main() {
         sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
         std::cout << "parz: " << duration_cast<microseconds>(end_time - start_time).count() / 1000.f << "iter: " << count_cycle <<std::endl;
 
-        if (count_cycle > prof_cycle){
+        if (count_cycle >= prof_cycle){
             window.close();
         }
 
@@ -205,6 +205,6 @@ int main() {
         }
         count_cycle++;
     }
-    std::cout << "Mean time: " << (sum_time / (prof_cycle -1)) << " ms" << std::endl;
+    std::cout << "Mean time: " << (sum_time / (prof_cycle + 1)) << " ms" << std::endl;
     return 0;
 }
