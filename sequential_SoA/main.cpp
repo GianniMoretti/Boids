@@ -18,7 +18,6 @@ float sum_time = 0.0f;
 //BOIDS      Time     
 //30000      2187.31
 
-
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
@@ -43,13 +42,8 @@ float maxbias = 0.001f;
 float biasincrement = 0.00004f;
 
 int main() {
-    //Se ha senso devi cambiare tutto da vector a malloc e usa i puntatori
-    //Data Boid Vector
     BoidDataList boidDataList;
     boidDataList.reserve(boids_number);
-    //Data tmp Boid vector
-    BoidDataList boidDataList_tmp;
-    boidDataList_tmp.reserve(boids_number);
 
     // Boids creation
     for (int i = 0; i < boids_number; ++i) {
@@ -74,58 +68,61 @@ int main() {
         }
 
         auto start_time = high_resolution_clock::now();
-        //Boids Logic
-        //Loop over all the boids
-        for (int i = 0; i < boidDataList.size(); i++) {
+
+        // Buffer temporanei per le nuove proprietà (array raw)
+        int N = boidDataList.size();
+        float* new_xPos = new float[N];
+        float* new_yPos = new float[N];
+        float* new_xVelocity = new float[N];
+        float* new_yVelocity = new float[N];
+        float* new_biasvals = new float[N];
+
+        // Calcolo nuove velocità, bias e posizioni
+        for (int i = 0; i < N; i++) {
             float tmp_pos_x = boidDataList.xPos[i];
             float tmp_pos_y = boidDataList.yPos[i];
             float tmp_vel_x = boidDataList.xVelocity[i];
             float tmp_vel_y = boidDataList.yVelocity[i];
             float tmp_biasval = boidDataList.biasvals[i];
-            //Vector of the boid's state
-            //The variable are:
-            //0:xpos_avg, 1:ypos_avg, 2:xvel_avg, 3:yvel_avg, 4:neighboring_boids, 5:close_dx, 6:close_dy
+            int scoutGroup = boidDataList.scoutGroup[i];
+
             float boidState[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-            //Loop on all otherbirds less the reference boids
-            for (int j = 0; j < boidDataList.size(); j++) {
-                if (i == j) {
-                    //Da cambiare non devi usare delle istruzioni speciali per uscire dal ciclo
-                    continue;  // Skip if we're considering the same boid
-                }
-                //Calculate euclidean distance
-                float dx = tmp_pos_x - boidDataList.xPos[j];
-                float dy = tmp_pos_y - boidDataList.yPos[j];
-                float distance = std::sqrt(std::pow(dx, 2) + std::pow(dy, 2));
+            // Ottimizzazione: raggruppa le letture in variabili locali per migliorare locality e prefetch
+            for (int j = 0; j < N; j++) {
+                if (i == j) continue;
+                float xj = boidDataList.xPos[j];
+                float yj = boidDataList.yPos[j];
+                float vxj = boidDataList.xVelocity[j];
+                float vyj = boidDataList.yVelocity[j];
+
+                float dx = tmp_pos_x - xj;
+                float dy = tmp_pos_y - yj;
+                float distance = std::sqrt(dx * dx + dy * dy);
                 if(distance < protectedRange){
                     boidState[5] += dx;
                     boidState[6] += dy;
                 }
                 else if (distance < visualRange){
-                    boidState[0] += boidDataList.xPos[j];
-                    boidState[1] += boidDataList.yPos[j];
-                    boidState[2] += boidDataList.xVelocity[j];
-                    boidState[3] += boidDataList.yVelocity[j];
+                    boidState[0] += xj;
+                    boidState[1] += yj;
+                    boidState[2] += vxj;
+                    boidState[3] += vyj;
                     boidState[4] += 1;
                 }
             }
 
-            if(boidState[4] > 0){   // if there are neighboar boids
-                // Mean of the comulated neighbor boids
+            if(boidState[4] > 0){
                 boidState[0] /= boidState[4];
                 boidState[1] /= boidState[4];
                 boidState[2] /= boidState[4];
                 boidState[3] /= boidState[4];
-
-                //Centering/Matching contibution contribution
                 tmp_vel_x = tmp_vel_x + (boidState[0] - tmp_pos_x) * centeringfactor + (boidState[2] - tmp_vel_x) * matchingfactor;
                 tmp_vel_y = tmp_vel_y + (boidState[1] - tmp_pos_y) * centeringfactor + (boidState[3] - tmp_vel_y) * matchingfactor;
             }
 
-            //Add the avoidance contribution to velocity
             tmp_vel_x += (boidState[5] * avoidfactor);
             tmp_vel_y += (boidState[6] * avoidfactor);
 
-            //Windows margin controll
             if(tmp_pos_x < Margin)
                 tmp_vel_x += turnfactorx;
             if(tmp_pos_x > windows_width - Margin)
@@ -135,29 +132,25 @@ int main() {
             if(tmp_pos_y > windows_height - Margin)
                 tmp_vel_y -= turnfactory;
 
-            //update the biasval
-            if(boidDataList.scoutGroup[i] == 1){  //he wants to go to the right side
+            // Bias update
+            if(scoutGroup == 1){
                 if(tmp_vel_x > 0){
                     tmp_biasval = std::max(maxbias, tmp_biasval + biasincrement);
-                }
-                else{
+                } else {
                     tmp_biasval = std::min(biasincrement, tmp_biasval - biasincrement);
                 }
                 tmp_vel_x = (1 - tmp_biasval)* tmp_vel_x + (tmp_biasval * 1);
-                
             }
-            if(boidDataList.scoutGroup[i] == 2){  //he wants to go to the left side   
+            if(scoutGroup == 2){
                 if(tmp_vel_x < 0){
                     tmp_biasval = std::max(maxbias, tmp_biasval + biasincrement);
-                }
-                else{
+                } else {
                     tmp_biasval = std::min(biasincrement, tmp_biasval - biasincrement);
                 }
                 tmp_vel_x = (1 - tmp_biasval)* tmp_vel_x + (tmp_biasval * (-1));
             }
 
-            float refBoidSpeed = std::sqrt(std::pow(tmp_vel_x, 2) + std::pow(tmp_vel_y, 2));
-
+            float refBoidSpeed = std::sqrt(tmp_vel_x * tmp_vel_x + tmp_vel_y * tmp_vel_y);
             if (refBoidSpeed < minspeed){
                 tmp_vel_x = (tmp_vel_x / refBoidSpeed) * minspeed;
                 tmp_vel_y = (tmp_vel_y / refBoidSpeed) * minspeed;
@@ -166,26 +159,43 @@ int main() {
                 tmp_vel_x = (tmp_vel_x / refBoidSpeed) * maxspeed;
                 tmp_vel_y = (tmp_vel_y / refBoidSpeed) * maxspeed;
             }
-            tmp_pos_x += tmp_vel_x;
-            tmp_pos_y += tmp_vel_y;
 
-            // Border limit controll
-            if(tmp_pos_x < 0)
-                tmp_pos_x = 0;
-            else if(tmp_pos_x > windows_width)
-                tmp_pos_x = windows_width;
-            
-            if (tmp_pos_y < 0)
-                tmp_pos_y = 0;
-            else if (tmp_pos_y > windows_height)
-                tmp_pos_y = windows_height;
-            
-            boidDataList_tmp.addBoid(i, tmp_pos_x, tmp_pos_y, tmp_vel_x, tmp_vel_y, tmp_biasval, boidDataList.scoutGroup[i]);
+            new_xVelocity[i] = tmp_vel_x;
+            new_yVelocity[i] = tmp_vel_y;
+            new_biasvals[i] = tmp_biasval;
+
+            float new_pos_x = tmp_pos_x + tmp_vel_x;
+            float new_pos_y = tmp_pos_y + tmp_vel_y;
+
+            if(new_pos_x < 0)
+                new_pos_x = 0;
+            else if(new_pos_x > windows_width)
+                new_pos_x = windows_width;
+            if (new_pos_y < 0)
+                new_pos_y = 0;
+            else if (new_pos_y > windows_height)
+                new_pos_y = windows_height;
+
+            new_xPos[i] = new_pos_x;
+            new_yPos[i] = new_pos_y;
         }
-        //New position, I use std::move() to avoid copying values
-        //Da cambiare, usa i puntatori invece che gli oggetti
-        boidDataList = std::move(boidDataList_tmp);
-        boidDataList_tmp.reset(boids_number);
+
+        // Copia i buffer temporanei negli array SoA originali
+        #pragma omp simd
+        for (int i = 0; i < N; i++) {
+            boidDataList.xPos[i] = new_xPos[i];
+            boidDataList.yPos[i] = new_yPos[i];
+            boidDataList.xVelocity[i] = new_xVelocity[i];
+            boidDataList.yVelocity[i] = new_yVelocity[i];
+            boidDataList.biasvals[i] = new_biasvals[i];
+            // scoutGroup non cambia
+        }
+
+        delete[] new_xPos;
+        delete[] new_yPos;
+        delete[] new_xVelocity;
+        delete[] new_yVelocity;
+        delete[] new_biasvals;
 
         auto end_time = high_resolution_clock::now();
         sum_time += duration_cast<microseconds>(end_time - start_time).count() / 1000.f;
@@ -196,7 +206,6 @@ int main() {
         }
 
         if (isGraphicsOn){
-            //Rendering
             window.clear();
             for (int i = 0; i < boidDataList.size(); i++){
                 renderer.draw(window, boidDataList.xPos[i], boidDataList.yPos[i], boidDataList.xVelocity[i], boidDataList.yVelocity[i]);

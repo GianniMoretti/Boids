@@ -2,63 +2,77 @@
 #define BOID_DATA_H
 
 #include <iostream>
+#include <cstring> // for memset
 
 struct BoidDataList {
-    std::vector<float> xPos;
-    std::vector<float> yPos;
-    std::vector<float> xVelocity;
-    std::vector<float> yVelocity;
-    std::vector<float> biasvals;
-    std::vector<int> scoutGroup;
+    float* xPos = nullptr;
+    float* yPos = nullptr;
+    float* xVelocity = nullptr;
+    float* yVelocity = nullptr;
+    float* biasvals = nullptr;
+    int* scoutGroup = nullptr;
     int numBoid = 0;
+    int capacity = 0;
+
+    BoidDataList() = default;
+
+    ~BoidDataList() {
+        deallocate();
+    }
+
+    void allocate(int num) {
+        deallocate();
+        xPos = new float[num];
+        yPos = new float[num];
+        xVelocity = new float[num];
+        yVelocity = new float[num];
+        biasvals = new float[num];
+        scoutGroup = new int[num];
+        capacity = num;
+        numBoid = 0;
+    }
+
+    void deallocate() {
+        delete[] xPos;
+        delete[] yPos;
+        delete[] xVelocity;
+        delete[] yVelocity;
+        delete[] biasvals;
+        delete[] scoutGroup;
+        xPos = yPos = xVelocity = yVelocity = biasvals = nullptr;
+        scoutGroup = nullptr;
+        capacity = 0;
+        numBoid = 0;
+    }
 
     void addBoid(int index, float x, float y, float xv, float yv, float biasval, int scoutgroup) {
+        if (index >= capacity) return;
         xPos[index] = x;
         yPos[index] = y;
         xVelocity[index] = xv;
         yVelocity[index] = yv;
         biasvals[index] = biasval;
         scoutGroup[index] = scoutgroup;
-        numBoid++;
+        if (index >= numBoid) numBoid = index + 1;
     }
 
-    void reserve(int num){
-        xPos.reserve(num);
-        yPos.reserve(num);
-        xVelocity.reserve(num);
-        yVelocity.reserve(num);
-        biasvals.reserve(num);
-        scoutGroup.reserve(num);
+    void reserve(int num) {
+        allocate(num);
     }
 
-    int size(){
+    int size() const {
         return numBoid;
     }
 
     void clear() {
-        // Clear all vectors to deallocate memory
-        xPos.clear();
-        yPos.clear();
-        xVelocity.clear();
-        yVelocity.clear();
-        biasvals.clear();
-        scoutGroup.clear();
-
-        // Optionally shrink the capacity to zero to free up memory
-        std::vector<float>().swap(xPos);
-        std::vector<float>().swap(yPos);
-        std::vector<float>().swap(xVelocity);
-        std::vector<float>().swap(yVelocity);
-        std::vector<float>().swap(biasvals);
-        std::vector<int>().swap(scoutGroup);
-
-        // Reset the boid count
         numBoid = 0;
+        // Optionally, zero memory (not strictly needed)
+        // if (capacity > 0) memset(xPos, 0, capacity * sizeof(float));
     }
 
-    void reset(int size){
-        clear();
-        reserve(size);
+    void reset(int size) {
+        deallocate();
+        allocate(size);
     }
 };
 
