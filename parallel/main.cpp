@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <chrono>
+#include <omp.h> // aggiunto per OpenMP
 
 #include "include/boid.h"
 #include "include/boidRenderer.h"
@@ -14,9 +15,10 @@ using namespace std::chrono;
 int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
+int num_threads = 8; // <-- Modifica qui per scegliere il numero di thread desiderato
 
 //BOIDS      Time     
-//30000      1130.92
+//30000      230.45
 
 int windows_width = 1200;
 int windows_height = 1000;
@@ -41,7 +43,12 @@ float minspeed = 3;
 float maxbias = 0.001f;
 float biasincrement = 0.00004f;
 
-int main() {
+int main(int argc, char* argv[]) {
+    int max_threads = omp_get_max_threads();
+    if (num_threads > max_threads) num_threads = max_threads;
+    omp_set_num_threads(num_threads);
+    std::cout << "Using " << num_threads << " threads." << std::endl;
+
     BoidDataList boidDataList;
     boidDataList.reserve(boids_number);
 
@@ -69,7 +76,6 @@ int main() {
 
         auto start_time = high_resolution_clock::now();
 
-        // Buffer temporanei per le nuove proprietà (array raw)
         int N = boidDataList.size();
         float* new_xPos = new float[N];
         float* new_yPos = new float[N];
@@ -77,7 +83,8 @@ int main() {
         float* new_yVelocity = new float[N];
         float* new_biasvals = new float[N];
 
-        // Calcolo nuove velocità, bias e posizioni
+        // Parallelizza questo ciclo
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < N; i++) {
             float tmp_pos_x = boidDataList.xPos[i];
             float tmp_pos_y = boidDataList.yPos[i];

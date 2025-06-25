@@ -16,8 +16,7 @@ int count_cycle = 0;
 float sum_time = 0.0f;
 
 //BOIDS      Time
-//30000      
-
+//30000      1925.18
 
 int windows_width = 1200;
 int windows_height = 1000;
