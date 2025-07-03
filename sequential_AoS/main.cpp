@@ -16,12 +16,18 @@ int count_cycle = 0;
 float sum_time = 0.0f;
 
 //BOIDS      Time
-//30000      1925.18
+//1000       2.46971
+//2000       9.76481
+//4000       38.1484
+//8000       151.87
+//16000      592.808
+//32000      2296.78
+//64000      8945.16
 
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 30000;                        //Con define potrebbe andare meglio
+int boids_number = 64000;                        //Con define potrebbe andare meglio
 int windows_frame_rate = 60;
 bool isGraphicsOn = false;
 

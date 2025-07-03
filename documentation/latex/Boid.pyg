@@ -1,0 +1,8 @@
+for (int i = 0; i < num_boids; i++) {
+    for (int j = 0; j < num_boids; j++) {
+        if (i != j) {
+            // Compute distance and apply rules
+        }
+    }
+    // Update velocity and position
+}

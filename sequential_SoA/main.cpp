@@ -15,15 +15,21 @@ int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
 
-//BOIDS      Time     
-//30000      1130.92
+//BOIDS      Time
+//1000       1.44871
+//2000       5.76957
+//4000       22.5696
+//8000       89.264
+//16000      354.186
+//32000      1388.72
+//64000      5319.14
 
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 30000;                               //Con define forse va meglio
+int boids_number = 64000;                               //Con define forse va meglio
 int windows_frame_rate = 60;
-bool isGraphicsOn = true;
+bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters

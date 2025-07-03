@@ -15,17 +15,39 @@ using namespace std::chrono;
 int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
-int num_threads = 8; // <-- Modifica qui per scegliere il numero di thread desiderato
+int num_threads = 7; // <-- Modifica qui per scegliere il numero di thread desiderato
 
-//BOIDS      Time     
-//30000      230.45
+//threads    12
+//BOIDS      Time
+//1000       2.73152
+//2000       3.51467
+//4000       6.603
+//8000       21.2985
+//16000      60.853
+//32000      222.108
+//64000      844.446
+
+//BOIDS      16000
+//Threads    time
+//1          5220.16
+//2          2578.39
+//3          1702.8
+//4          1273.42
+//5          1024.33
+//6          879.358
+//7          1105
+//8          960.056
+//9          868.504
+//10         881.645
+//11         852.534
+//12         843.304
 
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 30000;                               //Con define forse va meglio
+int boids_number = 64000;                               //Con define forse va meglio
 int windows_frame_rate = 60;
-bool isGraphicsOn = true;
+bool isGraphicsOn = false;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters
