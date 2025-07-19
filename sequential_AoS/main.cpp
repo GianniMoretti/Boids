@@ -27,7 +27,7 @@ float sum_time = 0.0f;
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 64000;                        //Con define potrebbe andare meglio
+int boids_number = 32000;                        //Con define potrebbe andare meglio
 int windows_frame_rate = 60;
 bool isGraphicsOn = false;
 

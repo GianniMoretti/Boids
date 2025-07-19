@@ -4,19 +4,39 @@
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \@writefile{toc}{\contentsline {section}{\numberline {1}\hskip -1em.~Introduction}{1}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}\hskip -1em.~Understanding the Boids Algorithm}{1}{subsection.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}\hskip -1em.~Releated Work}{1}{subsection.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2}\hskip -1em.~Leanguage and Libraries}{2}{section.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Visual representation of Boids simulation showing emergent flocking behavior through local interactions.}}{1}{figure.1}\protected@file@percent }
+\newlabel{fig:boids_visualization}{{1}{1}{Visual representation of Boids simulation showing emergent flocking behavior through local interactions}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}\hskip -1em.~Related Work}{1}{subsection.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}\hskip -1em.~Language and Libraries}{2}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}\hskip -1em.~Methodology}{2}{section.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}\hskip -1em.~Sequential Implementation}{2}{subsection.3.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}\hskip -1em.~Data Layouts: AoS vs SoA}{2}{subsection.3.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}\hskip -1em.~Parallel Implementation}{3}{subsection.3.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}\hskip -1em.~Results and Discussion}{3}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}\hskip -1em.~Performance Metrics}{3}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}\hskip -1em.~AoS vs SoA}{3}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}\hskip -1em.~Speedup Analysis}{4}{subsection.4.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}\hskip -1em.~Conclusion}{4}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{Appendix}{4}{section*.2}\protected@file@percent }
-\newlabel{appendix:seqcode}{{5}{4}{Sequential Update Loop Example}{section*.3}{}}
-\newlabel{appendix:aossoa}{{5}{4}{AoS vs SoA Data Structures and Main Loop}{section*.4}{}}
-\newlabel{appendix:parloop}{{5}{4}{Parallel SoA Main Loop Example}{section*.5}{}}
-\gdef \@abspage@last{5}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}\hskip -1em.~Testing Environment and Methodology}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Performance comparison between Array of Structures (AoS) and Structure of Arrays (SoA) implementations showing the impact of data layout on execution time.}}{4}{figure.2}\protected@file@percent }
+\newlabel{fig:aos_vs_soa}{{2}{4}{Performance comparison between Array of Structures (AoS) and Structure of Arrays (SoA) implementations showing the impact of data layout on execution time}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}\hskip -1em.~AoS vs SoA Performance Comparison}{4}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}\hskip -1em.~Parallel Speedup Analysis}{4}{subsection.4.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Execution time analysis showing performance across different numbers of boids and thread configurations.}}{5}{figure.3}\protected@file@percent }
+\newlabel{fig:performance_analysis}{{3}{5}{Execution time analysis showing performance across different numbers of boids and thread configurations}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Parallel scaling efficiency demonstrating speedup characteristics with increasing thread count.}}{5}{figure.4}\protected@file@percent }
+\newlabel{fig:scaling_analysis}{{4}{5}{Parallel scaling efficiency demonstrating speedup characteristics with increasing thread count}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}\hskip -1em.~Conclusion}{5}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}\hskip -1em.~Key Achievements}{5}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}\hskip -1em.~Implications for High-Performance Computing}{5}{subsection.5.2}\protected@file@percent }
+\bibcite{reynolds}{1}
+\bibcite{vanhunter}{2}
+\bibcite{openmp}{3}
+\bibcite{sfml}{4}
+\bibcite{bertini}{5}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}\hskip -1em.~Broader Impact}{6}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{Appendix}{6}{section*.2}\protected@file@percent }
+\newlabel{appendix:seqcode}{{5.3}{6}{Sequential Update Loop Example}{section*.3}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}Sequential Boids update loop structure}{6}{lstlisting.1}\protected@file@percent }
+\newlabel{appendix:aossoa}{{5.3}{6}{AoS vs SoA Data Structures and Main Loop}{section*.4}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}AoS data structure and main loop}{6}{lstlisting.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}SoA data structure and main loop}{7}{lstlisting.3}\protected@file@percent }
+\newlabel{appendix:parloop}{{5.3}{7}{Parallel SoA Implementation with OpenMP}{section*.5}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}Parallel Boids implementation using OpenMP}{7}{lstlisting.4}\protected@file@percent }
+\gdef \@abspage@last{8}

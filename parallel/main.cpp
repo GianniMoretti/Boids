@@ -15,7 +15,7 @@ using namespace std::chrono;
 int prof_cycle = 20;
 int count_cycle = 0;
 float sum_time = 0.0f;
-int num_threads = 7; // <-- Modifica qui per scegliere il numero di thread desiderato
+int num_threads = 12; // <-- Modifica qui per scegliere il numero di thread desiderato
 
 //threads    12
 //BOIDS      Time
@@ -45,7 +45,7 @@ int num_threads = 7; // <-- Modifica qui per scegliere il numero di thread desid
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 64000;                               //Con define forse va meglio
+int boids_number = 8000;                               //Con define forse va meglio
 int windows_frame_rate = 60;
 bool isGraphicsOn = false;
 

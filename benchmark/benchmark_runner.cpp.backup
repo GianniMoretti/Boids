@@ -1,0 +1,595 @@
+#include "benchmark_runner.h"
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <algorithm>
+#include <future>
+#include <thread>
+#include <cmath>
+#include <cstdlib>
+#include <omp.h>
+
+// Include delle implementazioni (versione per benchmark senza SFML)
+#include "boid_benchmark.h"
+
+using namespace std::chrono;
+
+template<typename Func>
+bool BenchmarkRunner::runWithTimeout(Func func, int timeout_sec, double& result) {
+    auto future = std::async(std::launch::async, func);
+    
+    if (future.wait_for(std::chrono::seconds(timeout_sec)) == std::future_status::timeout) {
+        std::cerr << "  TIMEOUT dopo " << timeout_sec << " secondi" << std::endl;
+        return false;
+    }
+    
+    try {
+        result = future.get();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "  ERRORE: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+double BenchmarkRunner::runSingleBenchmark(std::function<void()> setup_func, 
+                                          std::function<void()> bench_func,
+                                          int cycles) {
+    std::vector<double> times;
+    times.reserve(cycles);
+    
+    for (int i = 0; i < cycles; i++) {
+        setup_func(); // Setup per ogni ciclo
+        
+        auto start = high_resolution_clock::now();
+        bench_func(); // Esegue il benchmark
+        auto end = high_resolution_clock::now();
+        
+        double time_ms = duration_cast<microseconds>(end - start).count() / 1000.0;
+        times.push_back(time_ms);
+    }
+    
+    // Calcola la media
+    double sum = 0.0;
+    for (double time : times) {
+        sum += time;
+    }
+    
+    return sum / cycles;
+}
+
+void BenchmarkRunner::benchmarkAoS() {
+    std::cout << "\n=== BENCHMARK AoS (Array of Structures) ===" << std::endl;
+    
+    for (int boids_count : config.boids_counts) {
+        std::cout << "Testing AoS con " << boids_count << " boids... ";
+        std::cout.flush();
+        
+        double mean_time = 0.0;
+        
+        auto benchmark_func = [&]() {
+            // Setup AoS per ogni esecuzione
+            std::vector<BoidData> boidDataList;
+            boidDataList.reserve(boids_count);
+            
+            // Inizializzazione boids
+            for (int i = 0; i < boids_count; ++i) {
+                float x = static_cast<float>((rand() % 1000) + 100);
+                float y = static_cast<float>((rand() % 800) + 100);
+                float vx = static_cast<float>(rand() % 3 - 1);
+                float vy = static_cast<float>(rand() % 3 - 1);
+                int scG = rand() % 3;
+                boidDataList.emplace_back(x, y, vx, vy, 0.00004f, scG);
+            }
+            
+            // Parametri simulazione
+            const float visualRange = 40;
+            const float protectedRange = 10;
+            const float avoidfactor = 0.15f;
+            const float matchingfactor = 0.1f;
+            const float centeringfactor = 0.003f;
+            const float maxspeed = 6;
+            const float minspeed = 3;
+            const int windows_width = 1200;
+            const int windows_height = 1000;
+            const int Margin = 300;
+            const float turnfactorx = 0.15f;
+            const float turnfactory = 0.15f;
+            
+            std::vector<BoidData> boidDataList_tmp;
+            boidDataList_tmp.reserve(boids_count);
+            
+            // Logica principale boids (AoS)
+            for (int i = 0; i < boidDataList.size(); i++) {
+                        BoidData refBoid = boidDataList[i];
+                        float boidState[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+                        
+                        for (int j = 0; j < boidDataList.size(); j++) {
+                            if (i == j) continue;
+                            BoidData boid = boidDataList[j];
+                            
+                            float dx = refBoid.position.x - boid.position.x;
+                            float dy = refBoid.position.y - boid.position.y;
+                            float distance = std::sqrt(dx * dx + dy * dy);
+                            
+                            if(distance < protectedRange){
+                                boidState[5] += dx;
+                                boidState[6] += dy;
+                            }
+                            else if (distance < visualRange){
+                                boidState[0] += boid.position.x;
+                                boidState[1] += boid.position.y;
+                                boidState[2] += boid.velocity.x;
+                                boidState[3] += boid.velocity.y;
+                                boidState[4] += 1;
+                            }
+                        }
+                        
+                        if(boidState[4] > 0){
+                            boidState[0] /= boidState[4];
+                            boidState[1] /= boidState[4];
+                            boidState[2] /= boidState[4];
+                            boidState[3] /= boidState[4];
+                            
+                            refBoid.velocity.x += (boidState[0] - refBoid.position.x) * centeringfactor + (boidState[2] - refBoid.velocity.x) * matchingfactor;
+                            refBoid.velocity.y += (boidState[1] - refBoid.position.y) * centeringfactor + (boidState[3] - refBoid.velocity.y) * matchingfactor;
+                        }
+                        
+                        refBoid.velocity.x += (boidState[5] * avoidfactor);
+                        refBoid.velocity.y += (boidState[6] * avoidfactor);
+                        
+                        // Controlli bordi e velocità
+                        if(refBoid.position.x < Margin) refBoid.velocity.x += turnfactorx;
+                        if(refBoid.position.x > windows_width - Margin) refBoid.velocity.x -= turnfactorx;
+                        if(refBoid.position.y < Margin) refBoid.velocity.y += turnfactory;
+                        if(refBoid.position.y > windows_height - Margin) refBoid.velocity.y -= turnfactory;
+                        
+                        float refBoidSpeed = std::sqrt(refBoid.velocity.x * refBoid.velocity.x + refBoid.velocity.y * refBoid.velocity.y);
+                        if (refBoidSpeed < minspeed){
+                            refBoid.velocity.x = (refBoid.velocity.x / refBoidSpeed) * minspeed;
+                            refBoid.velocity.y = (refBoid.velocity.y / refBoidSpeed) * minspeed;
+                        }
+                        else if (refBoidSpeed > maxspeed){
+                            refBoid.velocity.x = (refBoid.velocity.x / refBoidSpeed) * maxspeed;
+                            refBoid.velocity.y = (refBoid.velocity.y / refBoidSpeed) * maxspeed;
+                        }
+                        
+                        refBoid.position.x += refBoid.velocity.x;
+                        refBoid.position.y += refBoid.velocity.y;
+                        
+                        if(refBoid.position.x < 0) refBoid.position.x = 0;
+                        else if(refBoid.position.x > windows_width) refBoid.position.x = windows_width;
+                        if (refBoid.position.y < 0) refBoid.position.y = 0;
+                        else if (refBoid.position.y > windows_height) refBoid.position.y = windows_height;
+                        
+                        boidDataList_tmp.emplace_back(refBoid);
+                    }
+                    
+                    boidDataList = std::move(boidDataList_tmp);
+            };
+        
+        // Il timing reale ora è gestito qui
+        auto timing_func = [&]() -> double {
+            return runSingleBenchmark(
+                [](){}, // Setup vuoto perché tutto è nella bench_func
+                benchmark_func,
+                config.profile_cycles
+            );
+        };
+        
+        bool success = runWithTimeout(timing_func, config.timeout_seconds, mean_time);
+        
+        if (success) {
+            std::cout << mean_time << " ms" << std::endl;
+            results.emplace_back("AoS", boids_count, 1, mean_time, true);
+        } else {
+            std::cout << "FALLITO" << std::endl;
+            results.emplace_back("AoS", boids_count, 1, 0.0, false);
+        }
+    }
+}
+
+void BenchmarkRunner::benchmarkSoA() {
+    std::cout << "\n=== BENCHMARK SoA (Structure of Arrays) ===" << std::endl;
+    
+    for (int boids_count : config.boids_counts) {
+        std::cout << "Testing SoA con " << boids_count << " boids... ";
+        std::cout.flush();
+        
+        double mean_time = 0.0;
+        
+        auto benchmark_func = [&]() -> double {
+            return runSingleBenchmark(
+                [&]() {
+                    // Setup SoA
+                },
+                [&]() -> double {
+                    // Implementazione SoA benchmark
+                    BoidDataList boidDataList;
+                    boidDataList.reserve(boids_count);
+                    
+                    // Inizializzazione
+                    for (int i = 0; i < boids_count; ++i) {
+                        float x = static_cast<float>((rand() % 1000) + 100);
+                        float y = static_cast<float>((rand() % 800) + 100);
+                        float vx = static_cast<float>(rand() % 3 - 1);
+                        float vy = static_cast<float>(rand() % 3 - 1);
+                        int scG = rand() % 3;
+                        boidDataList.addBoid(i, x, y, vx, vy, 0.00004f, scG);
+                    }
+                    
+                    // Implementazione SoA (simile al main originale ma senza grafica)
+                    const float visualRange = 40;
+                    const float protectedRange = 10;
+                    const float avoidfactor = 0.15f;
+                    const float matchingfactor = 0.1f;
+                    const float centeringfactor = 0.003f;
+                    const float maxspeed = 6;
+                    const float minspeed = 3;
+                    const int windows_width = 1200;
+                    const int windows_height = 1000;
+                    const int Margin = 300;
+                    const float turnfactorx = 0.15f;
+                    const float turnfactory = 0.15f;
+                    
+                    int N = boidDataList.size();
+                    float* new_xPos = new float[N];
+                    float* new_yPos = new float[N];
+                    float* new_xVelocity = new float[N];
+                    float* new_yVelocity = new float[N];
+                    float* new_biasvals = new float[N];
+                    
+                    // Logica principale SoA
+                    for (int i = 0; i < N; i++) {
+                        float tmp_pos_x = boidDataList.xPos[i];
+                        float tmp_pos_y = boidDataList.yPos[i];
+                        float tmp_vel_x = boidDataList.xVelocity[i];
+                        float tmp_vel_y = boidDataList.yVelocity[i];
+                        float tmp_biasval = boidDataList.biasvals[i];
+                        int scoutGroup = boidDataList.scoutGroup[i];
+                        
+                        float boidState[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+                        
+                        for (int j = 0; j < N; j++) {
+                            if (i == j) continue;
+                            float xj = boidDataList.xPos[j];
+                            float yj = boidDataList.yPos[j];
+                            float vxj = boidDataList.xVelocity[j];
+                            float vyj = boidDataList.yVelocity[j];
+                            
+                            float dx = tmp_pos_x - xj;
+                            float dy = tmp_pos_y - yj;
+                            float distance = std::sqrt(dx * dx + dy * dy);
+                            
+                            if(distance < protectedRange){
+                                boidState[5] += dx;
+                                boidState[6] += dy;
+                            }
+                            else if (distance < visualRange){
+                                boidState[0] += xj;
+                                boidState[1] += yj;
+                                boidState[2] += vxj;
+                                boidState[3] += vyj;
+                                boidState[4] += 1;
+                            }
+                        }
+                        
+                        if(boidState[4] > 0){
+                            boidState[0] /= boidState[4];
+                            boidState[1] /= boidState[4];
+                            boidState[2] /= boidState[4];
+                            boidState[3] /= boidState[4];
+                            tmp_vel_x += (boidState[0] - tmp_pos_x) * centeringfactor + (boidState[2] - tmp_vel_x) * matchingfactor;
+                            tmp_vel_y += (boidState[1] - tmp_pos_y) * centeringfactor + (boidState[3] - tmp_vel_y) * matchingfactor;
+                        }
+                        
+                        tmp_vel_x += (boidState[5] * avoidfactor);
+                        tmp_vel_y += (boidState[6] * avoidfactor);
+                        
+                        // Controlli bordi e velocità (come AoS)
+                        if(tmp_pos_x < Margin) tmp_vel_x += turnfactorx;
+                        if(tmp_pos_x > windows_width - Margin) tmp_vel_x -= turnfactorx;
+                        if(tmp_pos_y < Margin) tmp_vel_y += turnfactory;
+                        if(tmp_pos_y > windows_height - Margin) tmp_vel_y -= turnfactory;
+                        
+                        float refBoidSpeed = std::sqrt(tmp_vel_x * tmp_vel_x + tmp_vel_y * tmp_vel_y);
+                        if (refBoidSpeed < minspeed){
+                            tmp_vel_x = (tmp_vel_x / refBoidSpeed) * minspeed;
+                            tmp_vel_y = (tmp_vel_y / refBoidSpeed) * minspeed;
+                        }
+                        else if (refBoidSpeed > maxspeed){
+                            tmp_vel_x = (tmp_vel_x / refBoidSpeed) * maxspeed;
+                            tmp_vel_y = (tmp_vel_y / refBoidSpeed) * maxspeed;
+                        }
+                        
+                        new_xVelocity[i] = tmp_vel_x;
+                        new_yVelocity[i] = tmp_vel_y;
+                        new_biasvals[i] = tmp_biasval;
+                        
+                        float new_pos_x = tmp_pos_x + tmp_vel_x;
+                        float new_pos_y = tmp_pos_y + tmp_vel_y;
+                        
+                        if(new_pos_x < 0) new_pos_x = 0;
+                        else if(new_pos_x > windows_width) new_pos_x = windows_width;
+                        if (new_pos_y < 0) new_pos_y = 0;
+                        else if (new_pos_y > windows_height) new_pos_y = windows_height;
+                        
+                        new_xPos[i] = new_pos_x;
+                        new_yPos[i] = new_pos_y;
+                    }
+                    
+                    // Copia risultati
+                    for (int i = 0; i < N; i++) {
+                        boidDataList.xPos[i] = new_xPos[i];
+                        boidDataList.yPos[i] = new_yPos[i];
+                        boidDataList.xVelocity[i] = new_xVelocity[i];
+                        boidDataList.yVelocity[i] = new_yVelocity[i];
+                        boidDataList.biasvals[i] = new_biasvals[i];
+                    }
+                    
+                    delete[] new_xPos;
+                    delete[] new_yPos;
+                    delete[] new_xVelocity;
+                    delete[] new_yVelocity;
+                    delete[] new_biasvals;
+                    
+                    return 0.0;
+                },
+                config.profile_cycles
+            );
+        };
+        
+        bool success = runWithTimeout(benchmark_func, config.timeout_seconds, mean_time);
+        
+        if (success) {
+            std::cout << mean_time << " ms" << std::endl;
+            results.emplace_back("SoA", boids_count, 1, mean_time, true);
+        } else {
+            std::cout << "FALLITO" << std::endl;
+            results.emplace_back("SoA", boids_count, 1, 0.0, false);
+        }
+    }
+}
+
+void BenchmarkRunner::benchmarkParallel() {
+    std::cout << "\n=== BENCHMARK Parallel (OpenMP) ===" << std::endl;
+    
+    for (int boids_count : config.boids_counts) {
+        for (int num_threads : config.thread_counts) {
+            if (num_threads > omp_get_max_threads()) continue;
+            
+            std::cout << "Testing Parallel con " << boids_count << " boids, " << num_threads << " threads... ";
+            std::cout.flush();
+            
+            double mean_time = 0.0;
+            
+            auto benchmark_func = [&]() -> double {
+                return runSingleBenchmark(
+                    [&]() {
+                        omp_set_num_threads(num_threads);
+                    },
+                    [&]() -> double {
+                        // Implementazione Parallel benchmark (identica a SoA ma con OpenMP)
+                        BoidDataList boidDataList;
+                        boidDataList.reserve(boids_count);
+                        
+                        for (int i = 0; i < boids_count; ++i) {
+                            float x = static_cast<float>((rand() % 1000) + 100);
+                            float y = static_cast<float>((rand() % 800) + 100);
+                            float vx = static_cast<float>(rand() % 3 - 1);
+                            float vy = static_cast<float>(rand() % 3 - 1);
+                            int scG = rand() % 3;
+                            boidDataList.addBoid(i, x, y, vx, vy, 0.00004f, scG);
+                        }
+                        
+                        const float visualRange = 40;
+                        const float protectedRange = 10;
+                        const float avoidfactor = 0.15f;
+                        const float matchingfactor = 0.1f;
+                        const float centeringfactor = 0.003f;
+                        const float maxspeed = 6;
+                        const float minspeed = 3;
+                        const int windows_width = 1200;
+                        const int windows_height = 1000;
+                        const int Margin = 300;
+                        const float turnfactorx = 0.15f;
+                        const float turnfactory = 0.15f;
+                        
+                        int N = boidDataList.size();
+                        float* new_xPos = new float[N];
+                        float* new_yPos = new float[N];
+                        float* new_xVelocity = new float[N];
+                        float* new_yVelocity = new float[N];
+                        float* new_biasvals = new float[N];
+                        
+                        // Loop parallelo con OpenMP
+                        #pragma omp parallel for schedule(static)
+                        for (int i = 0; i < N; i++) {
+                            float tmp_pos_x = boidDataList.xPos[i];
+                            float tmp_pos_y = boidDataList.yPos[i];
+                            float tmp_vel_x = boidDataList.xVelocity[i];
+                            float tmp_vel_y = boidDataList.yVelocity[i];
+                            float tmp_biasval = boidDataList.biasvals[i];
+                            int scoutGroup = boidDataList.scoutGroup[i];
+                            
+                            float boidState[] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+                            
+                            for (int j = 0; j < N; j++) {
+                                if (i == j) continue;
+                                float xj = boidDataList.xPos[j];
+                                float yj = boidDataList.yPos[j];
+                                float vxj = boidDataList.xVelocity[j];
+                                float vyj = boidDataList.yVelocity[j];
+                                
+                                float dx = tmp_pos_x - xj;
+                                float dy = tmp_pos_y - yj;
+                                float distance = std::sqrt(dx * dx + dy * dy);
+                                
+                                if(distance < protectedRange){
+                                    boidState[5] += dx;
+                                    boidState[6] += dy;
+                                }
+                                else if (distance < visualRange){
+                                    boidState[0] += xj;
+                                    boidState[1] += yj;
+                                    boidState[2] += vxj;
+                                    boidState[3] += vyj;
+                                    boidState[4] += 1;
+                                }
+                            }
+                            
+                            if(boidState[4] > 0){
+                                boidState[0] /= boidState[4];
+                                boidState[1] /= boidState[4];
+                                boidState[2] /= boidState[4];
+                                boidState[3] /= boidState[4];
+                                tmp_vel_x += (boidState[0] - tmp_pos_x) * centeringfactor + (boidState[2] - tmp_vel_x) * matchingfactor;
+                                tmp_vel_y += (boidState[1] - tmp_pos_y) * centeringfactor + (boidState[3] - tmp_vel_y) * matchingfactor;
+                            }
+                            
+                            tmp_vel_x += (boidState[5] * avoidfactor);
+                            tmp_vel_y += (boidState[6] * avoidfactor);
+                            
+                            if(tmp_pos_x < Margin) tmp_vel_x += turnfactorx;
+                            if(tmp_pos_x > windows_width - Margin) tmp_vel_x -= turnfactorx;
+                            if(tmp_pos_y < Margin) tmp_vel_y += turnfactory;
+                            if(tmp_pos_y > windows_height - Margin) tmp_vel_y -= turnfactory;
+                            
+                            float refBoidSpeed = std::sqrt(tmp_vel_x * tmp_vel_x + tmp_vel_y * tmp_vel_y);
+                            if (refBoidSpeed < minspeed){
+                                tmp_vel_x = (tmp_vel_x / refBoidSpeed) * minspeed;
+                                tmp_vel_y = (tmp_vel_y / refBoidSpeed) * minspeed;
+                            }
+                            else if (refBoidSpeed > maxspeed){
+                                tmp_vel_x = (tmp_vel_x / refBoidSpeed) * maxspeed;
+                                tmp_vel_y = (tmp_vel_y / refBoidSpeed) * maxspeed;
+                            }
+                            
+                            new_xVelocity[i] = tmp_vel_x;
+                            new_yVelocity[i] = tmp_vel_y;
+                            new_biasvals[i] = tmp_biasval;
+                            
+                            float new_pos_x = tmp_pos_x + tmp_vel_x;
+                            float new_pos_y = tmp_pos_y + tmp_vel_y;
+                            
+                            if(new_pos_x < 0) new_pos_x = 0;
+                            else if(new_pos_x > windows_width) new_pos_x = windows_width;
+                            if (new_pos_y < 0) new_pos_y = 0;
+                            else if (new_pos_y > windows_height) new_pos_y = windows_height;
+                            
+                            new_xPos[i] = new_pos_x;
+                            new_yPos[i] = new_pos_y;
+                        }
+                        
+                        // Copia risultati
+                        #pragma omp simd
+                        for (int i = 0; i < N; i++) {
+                            boidDataList.xPos[i] = new_xPos[i];
+                            boidDataList.yPos[i] = new_yPos[i];
+                            boidDataList.xVelocity[i] = new_xVelocity[i];
+                            boidDataList.yVelocity[i] = new_yVelocity[i];
+                            boidDataList.biasvals[i] = new_biasvals[i];
+                        }
+                        
+                        delete[] new_xPos;
+                        delete[] new_yPos;
+                        delete[] new_xVelocity;
+                        delete[] new_yVelocity;
+                        delete[] new_biasvals;
+                        
+                        return 0.0;
+                    },
+                    config.profile_cycles
+                );
+            };
+            
+            bool success = runWithTimeout(benchmark_func, config.timeout_seconds, mean_time);
+            
+            if (success) {
+                std::cout << mean_time << " ms" << std::endl;
+                results.emplace_back("Parallel", boids_count, num_threads, mean_time, true);
+            } else {
+                std::cout << "FALLITO" << std::endl;
+                results.emplace_back("Parallel", boids_count, num_threads, 0.0, false);
+            }
+        }
+    }
+}
+
+void BenchmarkRunner::runAllBenchmarks() {
+    std::cout << "=====================================" << std::endl;
+    std::cout << "BENCHMARK BOIDS IMPLEMENTATIONS (C++)" << std::endl;
+    std::cout << "=====================================" << std::endl;
+    std::cout << "Configurazione:" << std::endl;
+    std::cout << "  Cicli per test: " << config.profile_cycles << std::endl;
+    std::cout << "  Timeout: " << config.timeout_seconds << "s" << std::endl;
+    std::cout << "  Max thread: " << omp_get_max_threads() << std::endl;
+    std::cout << "=====================================" << std::endl;
+    
+    benchmarkAoS();
+    benchmarkSoA();
+    benchmarkParallel();
+}
+
+void BenchmarkRunner::saveResults() const {
+    std::ofstream file(config.output_file);
+    if (!file.is_open()) {
+        std::cerr << "Errore: impossibile creare " << config.output_file << std::endl;
+        return;
+    }
+    
+    file << "Implementation,Boids,Threads,Mean_Time_ms" << std::endl;
+    
+    for (const auto& result : results) {
+        if (result.success) {  // Salva solo i risultati riusciti
+            file << result.implementation << "," 
+                 << result.boids << ","
+                 << result.threads << ","
+                 << std::fixed << std::setprecision(2) << result.meanTime << std::endl;
+        }
+    }
+    
+    file.close();
+    std::cout << "\nRisultati salvati in: " << config.output_file << std::endl;
+}
+
+void BenchmarkRunner::printSummary() const {
+    std::cout << "\n=====================================" << std::endl;
+    std::cout << "RIEPILOGO BENCHMARK" << std::endl;
+    std::cout << "=====================================" << std::endl;
+    
+    int total_tests = results.size();
+    int successful_tests = std::count_if(results.begin(), results.end(), 
+                                        [](const BenchmarkResult& r) { return r.success; });
+    
+    std::cout << "Test totali: " << total_tests << std::endl;
+    std::cout << "Test riusciti: " << successful_tests << std::endl;
+    std::cout << "Test falliti: " << (total_tests - successful_tests) << std::endl;
+    
+    // Calcola speedup medio
+    std::map<std::pair<std::string, int>, double> best_times;
+    
+    for (const auto& result : results) {
+        if (!result.success) continue;
+        
+        auto key = std::make_pair(result.implementation, result.boids);
+        if (best_times.find(key) == best_times.end() || result.meanTime < best_times[key]) {
+            best_times[key] = result.meanTime;
+        }
+    }
+    
+    // Trova speedup SoA vs AoS
+    std::cout << "\nSpeedup SoA vs AoS:" << std::endl;
+    for (int boids : {1000, 2000, 4000, 8000, 16000, 32000}) {
+        auto aos_key = std::make_pair(std::string("AoS"), boids);
+        auto soa_key = std::make_pair(std::string("SoA"), boids);
+        
+        if (best_times.find(aos_key) != best_times.end() && 
+            best_times.find(soa_key) != best_times.end()) {
+            double speedup = best_times[aos_key] / best_times[soa_key];
+            std::cout << "  " << boids << " boids: " << std::fixed << std::setprecision(2) << speedup << "x" << std::endl;
+        }
+    }
+    
+    std::cout << "\n=====================================" << std::endl;
+}

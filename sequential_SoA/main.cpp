@@ -11,7 +11,7 @@
 using namespace std::chrono;
 
 //Time profiling setting
-int prof_cycle = 20;
+int prof_cycle = 4000000;
 int count_cycle = 0;
 float sum_time = 0.0f;
 
@@ -27,9 +27,9 @@ float sum_time = 0.0f;
 int windows_width = 1200;
 int windows_height = 1000;
 float boids_scale = 0.5f;
-int boids_number = 64000;                               //Con define forse va meglio
+int boids_number = 400;                               //Con define forse va meglio
 int windows_frame_rate = 60;
-bool isGraphicsOn = false;
+bool isGraphicsOn = true;
 
 //Potrebbero essere delle costanti?
 //Tunneble parameters
