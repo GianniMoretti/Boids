@@ -1,0 +1,44 @@
+\chapter{Experimental Setup}
+
+\section{Benchmark Methodology}
+
+\textbf{Testing Environment:}
+\begin{itemize}
+    \item Multi-core CPU system (12 cores)
+    \item Identical simulation parameters across all tests
+    \item Multiple runs per configuration for statistical accuracy (30 runs)
+    \item Isolated measurement of core algorithm (no rendering overhead)
+\end{itemize}
+
+\textbf{Test Parameters:}
+\begin{itemize}
+    \item \textbf{Boid populations}: 1,000 to 32,000 agents
+    \item \textbf{Thread configurations}: 1 to 12 threads
+    \item \textbf{Implementations}: Sequential AoS vs Sequential SoA vs Parallel SoA
+\end{itemize}
+
+\section{Performance Metrics}
+
+\textbf{Primary Measurements:}
+\begin{itemize}
+    \item Execution time per simulation step
+    \item Speedup vs sequential baseline
+    \item Scaling efficiency with thread count
+\end{itemize}
+
+\textbf{Analysis Focus:}
+\begin{itemize}
+    \item Impact of data layout optimization
+    \item Parallel scalability characteristics  
+    \item Optimal thread configuration
+    \item Performance vs problem size relationship
+\end{itemize}
+
+\section{Computational Complexity Analysis}
+
+\textbf{Algorithm Characteristics:}
+\begin{itemize}
+    \item \textbf{Time Complexity}: O(N²) per simulation step
+    \item \textbf{Space Complexity}: O(N) for boid storage
+    \item \textbf{Parallel Potential}: Embarrassingly parallel outer loop
+\end{itemize}

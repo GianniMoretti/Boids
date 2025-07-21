@@ -1,0 +1,115 @@
+\chapter{Implementation Details}
+
+\section{Data Layout Comparison: AoS vs SoA}
+
+\subsection{Array of Structures (AoS)}
+\textbf{Traditional object-oriented approach}
+
+\begin{center}
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{lstlisting}[style=cppstyle]
+struct BoidData {
+    sf::Vector2f position;
+    sf::Vector2f velocity;
+    float biasval;
+    int scoutGroup;
+};
+\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{itemize}
+    \item Easy to understand and maintain
+    \item Less cache-friendly for bulk operations
+    \item Memory accesses can be scattered
+\end{itemize}
+\end{minipage}
+\end{center}
+
+\newpage
+\subsection{Structure of Arrays (SoA)}
+\textbf{Performance-optimized layout}
+
+\begin{center}
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{lstlisting}[style=cppstyle]
+struct BoidDataList {
+    float* xPos;
+    float* yPos;
+    float* xVelocity;
+    float* yVelocity;
+    float* biasvals;
+    int* scoutGroup;
+    int numBoid;
+};
+\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{itemize}
+    \item Better cache utilization
+    \item Enables SIMD vectorization
+    \item Contiguous memory access patterns
+\end{itemize}
+\end{minipage}
+\end{center}
+
+\section{Sequential Implementation}
+
+\textbf{Main Algorithm Structure:}
+\begin{lstlisting}[style=cppstyle]
+for (int i = 0; i < num_boids; i++) {
+    // Compute alignment, cohesion, separation
+    for (int j = 0; j < num_boids; j++) {
+        if (i != j && distance < perception_radius) {
+            // Apply boid interaction rules
+        }
+    }
+    // Update position and velocity
+}
+\end{lstlisting}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item O(N²) computational complexity
+    \item Perfect candidate for parallelization
+\end{itemize}
+
+\section{Parallel Implementation with OpenMP}
+
+\textbf{Key Parallelization Strategy:}
+\begin{lstlisting}[style=cppstyle]
+#pragma omp parallel for schedule(static)
+for (int i = 0; i < N; i++) {
+    // Each thread processes different boids
+    // Thread-safe access to read-only data
+    // Write to separate temporary arrays
+}
+
+#pragma omp simd
+for (int i = 0; i < N; i++) {
+    // Vectorized copy back to main arrays
+    boidDataList.xPos[i] = new_xPos[i];
+    boidDataList.yPos[i] = new_yPos[i];
+    // ...
+}
+\end{lstlisting}
+
+\textbf{Thread Safety Approach:}
+\begin{itemize}
+    \item Read-only access to current state
+    \item Write results to temporary arrays
+    \item Vectorized copy-back operation
+    \item No race conditions or data dependencies
+\end{itemize}
+
+\textbf{Compiler Vectorization Enablers:}
+\begin{itemize}
+    \item Contiguous memory access (SoA layout)
+    \item \texttt{\#pragma omp simd} directives
+    \item Multiple data elements processed per instruction
+\end{itemize}
